@@ -1,10 +1,11 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { FileUploadIcon, LoaderIcon, ResetIcon, ErrorIcon } from './components/Icons';
 import { extractTextFromPdf } from './services/pdfParser';
 import { generateWorkPlan } from './services/geminiService';
-import { type WorkPlan } from './types';
+import { type WorkPlan, type Task, type TaskStatus, type ReminderOption } from './types';
 import { WorkPlanDisplay } from './components/WorkPlanDisplay';
+import { checkAndNotifyReminders, updateReminder } from './services/reminderService';
 
 const App: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -13,6 +14,11 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for any due reminders when the app first loads.
+    checkAndNotifyReminders();
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -61,6 +67,46 @@ const App: React.FC = () => {
     setIsLoading(false);
   };
 
+  const handleUpdateTaskStatus = (taskId: number, newStatus: TaskStatus) => {
+    if (!workPlan) return;
+
+    const updatedTasks = workPlan.tasks.map(task =>
+      task.id === taskId ? { ...task, status: newStatus } : task
+    );
+
+    setWorkPlan({ ...workPlan, tasks: updatedTasks });
+  };
+  
+  const handleUpdateTaskReminder = (taskId: number, newReminder: ReminderOption, customDate?: string) => {
+    if (!workPlan) return;
+
+    let targetTask: Task | undefined;
+
+    const updatedTasks = workPlan.tasks.map(task => {
+      if (task.id === taskId) {
+        const updatedTask: Task = {
+          ...task,
+          reminder: newReminder,
+        };
+        if (newReminder === 'Custom') {
+          updatedTask.customReminderDate = customDate;
+        } else {
+          // Clear custom date if a non-custom option is selected
+          delete updatedTask.customReminderDate;
+        }
+        targetTask = updatedTask;
+        return targetTask;
+      }
+      return task;
+    });
+
+    if (targetTask) {
+      setWorkPlan({ ...workPlan, tasks: updatedTasks });
+      // Persist the reminder change to localStorage
+      updateReminder(targetTask);
+    }
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -90,7 +136,12 @@ const App: React.FC = () => {
 
 
     if (workPlan) {
-      return <WorkPlanDisplay workPlan={workPlan} onReset={handleReset} />;
+      return <WorkPlanDisplay 
+        workPlan={workPlan} 
+        onReset={handleReset} 
+        onUpdateTaskStatus={handleUpdateTaskStatus}
+        onUpdateTaskReminder={handleUpdateTaskReminder} 
+      />;
     }
 
     return (

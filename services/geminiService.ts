@@ -25,8 +25,10 @@ const workPlanSchema = {
           startDate: { type: Type.STRING, description: "The estimated start date for the task in YYYY-MM-DD format." },
           endDate: { type: Type.STRING, description: "The estimated end date for the task in YYYY-MM-DD format." },
           status: { type: Type.STRING, description: "The initial status of the task. Should be one of: 'Not Started', 'In Progress', 'Completed', 'On Hold'. Default to 'Not Started'." },
+          reminder: { type: Type.STRING, description: "The initial reminder setting for the task. Should always be 'None' by default." },
+          customReminderDate: { type: Type.STRING, description: "The specific date for a custom reminder in YYYY-MM-DD format. Only used when reminder is 'Custom'. Should be null or omitted by default." },
         },
-        required: ["id", "name", "description", "assignee", "startDate", "endDate", "status"],
+        required: ["id", "name", "description", "assignee", "startDate", "endDate", "status", "reminder"],
       },
     },
   },
@@ -51,7 +53,7 @@ export const generateWorkPlan = async (documentText: string): Promise<WorkPlan> 
     1.  The project name should be inferred from the document's main subject.
     2.  Provide a high-level summary of the work plan.
     3.  Break down the work into specific, actionable tasks.
-    4.  For each task, provide a description, an inferred assignee/role, start date, end date, and an initial status of 'Not Started'.
+    4.  For each task, provide a description, an inferred assignee/role, start date, end date, an initial status of 'Not Started', and a default reminder of 'None'.
     5.  The timeline should be logical, with sequential tasks having appropriate start and end dates.
     6.  Assume today's date is ${today} for creating the timeline. Dates must be in YYYY-MM-DD format.
     7.  Structure the output strictly as a JSON object matching the provided schema. Do not include any text or markdown formatting outside of the JSON object.
