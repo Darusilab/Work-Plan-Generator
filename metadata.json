@@ -1,0 +1,5 @@
+{
+  "name": "PDF Work Plan Generator",
+  "description": "An application that analyzes uploaded PDF documents to identify pending issues and automatically generates a structured work plan and timeline for their resolution.",
+  "requestFramePermissions": []
+}
